@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>智慧数字服务平台 | 移动应用开发期末作业</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            darkBg: '#0F172A',
+            glass: 'rgba(255,255,255,0.15)',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto { content-visibility: auto; }
+      .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+      .text-shadow { text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+      .animate-float { animation: float 4s ease-in-out infinite; }
+      @keyframes float {
+        0%,100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-darkBg transition-colors duration-500">
+  <!-- 回到顶部悬浮按钮 -->
+  <button id="backTop" class="fixed bottom-8 right-8 w-12 h-12 rounded-full bg-primary text-white shadow-lg hidden hover:scale-110 transition-all z-50">
+    <i class="fa-solid fa-arrow-up"></i>
+  </button>
+
+  <!-- 登录弹窗【修正为简约蓝白圆角样式，和页面统一】 -->
+  <div id="loginModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] hidden">
+    <div class="bg-white dark:bg-slate-800 w-[90%] max-w-lg rounded-2xl p-8 shadow-xl glass-card">
+      <div class="flex justify-between items-start mb-8">
+        <h3 class="text-[2rem] font-bold text-gray-900 dark:text-white">用户登录</h3>
+        <button class="closeModal text-2xl text-gray-800 dark:text-white hover:text-primary transition"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <input id="loginUser" type="text" placeholder="请输入账号" value="test123" class="w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-5 py-4 mb-5 text-lg outline-primary">
+      <input id="loginPwd" type="password" placeholder="请输入密码" value="123456" class="w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-5 py-4 mb-6 text-lg outline-primary">
+      <button id="loginSubmit" class="w-full bg-primary text-white py-4 rounded-xl text-lg font-medium hover:opacity-90 transition">立即登录</button>
+      <p class="text-center mt-6 text-lg text-gray-500 dark:text-slate-400">没有账号？<span class="text-primary cursor-pointer switchReg">去注册</span></p>
+    </div>
+  </div>
+
+  <!-- 注册弹窗【统一蓝白圆角简约样式】 -->
+  <div id="regModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] hidden">
+    <div class="bg-white dark:bg-slate-800 w-[90%] max-w-lg rounded-2xl p-8 shadow-xl glass-card">
+      <div class="flex justify-between items-start mb-8">
+        <h3 class="text-[2rem] font-bold text-gray-900 dark:text-white">账号注册</h3>
+        <button class="closeModal text-2xl text-gray-800 dark:text-white hover:text-primary transition"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <input id="regUser" type="text" placeholder="设置用户名" class="w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-5 py-4 mb-5 text-lg outline-primary">
+      <input id="regPwd" type="password" placeholder="设置密码" class="w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-5 py-4 mb-5 text-lg outline-primary">
+      <input id="regPwd2" type="password" placeholder="确认密码" class="w-full border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl px-5 py-4 mb-6 text-lg outline-primary">
+      <button id="regSubmit" class="w-full bg-primary text-white py-4 rounded-xl text-lg font-medium hover:opacity-90 transition">完成注册</button>
+      <p class="text-center mt-6 text-lg text-gray-500 dark:text-slate-400">已有账号？<span class="text-primary cursor-pointer switchLogin">去登录</span></p>
+    </div>
+  </div>
+
+  <!-- 产品详情弹窗 -->
+  <div id="detailModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] hidden">
+    <div class="bg-white dark:bg-slate-800 w-[90%] max-w-lg rounded-xl p-6 glass-card max-h-[80vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="detailTitle" class="text-xl font-bold dark:text-white"></h3>
+        <button class="closeModal text-xl dark:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="detailContent" class="text-gray-600 dark:text-slate-300 leading-relaxed"></div>
+      <div id="serviceBtnBox" class="mt-6 flex flex-wrap gap-3"></div>
+    </div>
+  </div>
+
+  <!-- 服务操作表单弹窗 -->
+  <div id="operateModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-[110] hidden">
+    <div class="bg-white dark:bg-slate-800 w-[90%] max-w-md rounded-xl p-6 glass-card">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="operateTitle" class="text-xl font-bold dark:text-white"></h3>
+        <button class="closeOperate text-xl dark:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p id="operateDesc" class="text-gray-600 dark:text-slate-300 mb-4"></p>
+      <input id="operateInput" class="w-full border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-4 py-2 mb-4 outline-primary" placeholder="">
+      <button id="operateConfirm" class="w-full bg-primary text-white py-2 rounded-lg hover:opacity-90 transition">确认提交</button>
+    </div>
+  </div>
+
+  <!-- 移动端侧边菜单 -->
+  <div id="mobileMenu" class="fixed top-0 left-0 h-full w-[260px] bg-darkBg z-[99] -translate-x-full transition-transform duration-300 p-6">
+    <button class="closeMenu absolute top-5 right-5 text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+    <div class="mt-12 flex flex-col gap-6 text-white text-lg">
+      <a href="#home" class="nav-link">首页</a>
+      <a href="#product" class="nav-link">产品中心</a>
+      <a href="#service" class="nav-link">服务体系</a>
+      <a href="#news" class="nav-link">资讯动态</a>
+      <a href="#message" class="nav-link">在线留言</a>
+      <a href="#about" class="nav-link">关于我们</a>
+    </div>
+  </div>
+
+  <!-- 导航栏（原版蓝白界面不变） -->
+  <nav class="fixed top-0 left-0 w-full bg-white/80 dark:bg-darkBg/80 glass-card shadow-sm z-[98]">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="#home" class="text-2xl font-bold text-primary flex items-center gap-2">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <span>智慧移动平台</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#home" class="nav-link text-gray-700 dark:text-slate-200 hover:text-primary transition">首页</a>
+        <a href="#product" class="nav-link text-gray-700 dark:text-slate-200 hover:text-primary transition">产品中心</a>
+        <a href="#service" class="nav-link text-gray-700 dark:text-slate-200 hover:text-primary transition">服务体系</a>
+        <a href="#news" class="nav-link text-gray-700 dark:text-slate-200 hover:text-primary transition">资讯动态</a>
+        <a href="#message" class="nav-link text-gray-700 dark:text-slate-200 hover:text-primary transition">在线留言</a>
+        <a href="#about" class="nav-link text-gray-700 dark:text-slate-200 hover:text-primary transition">关于我们</a>
+      </div>
+      <div class="flex items-center gap-4">
+        <button id="themeSwitch" class="text-gray-700 dark:text-white text-lg">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:block"></i>
+        </button>
+        <button id="loginBtn" class="hidden md:block px-4 py-1.5 border border-primary text-primary rounded-full hover:bg-primary hover:text-white transition">登录</button>
+        <button id="menuBtn" class="md:hidden text-gray-700 dark:text-white text-xl"><i class="fa-solid fa-bars"></i></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 首页蓝色渐变轮播横幅（原版不变） -->
+  <section id="home" class="pt-20 overflow-hidden">
+    <div class="relative w-full h-[50vh] md:h-[70vh] bg-gradient-to-br from-primary to-blue-400">
+      <div class="carousel-container h-full relative">
+        <div class="carousel-item absolute inset-0 flex items-center justify-center text-center text-white px-6 opacity-0 transition-opacity duration-700">
+          <div>
+            <h1 class="text-[clamp(1.8rem,5vw,3.5rem)] font-bold text-shadow mb-4">移动应用开发综合展示平台</h1>
+            <p class="text-[clamp(1rem,2vw,1.2rem)] max-w-2xl mx-auto opacity-90">适配手机、平板、PC多终端，全交互高级UI设计</p>
+            <button class="detailOpen mt-6 px-6 py-3 bg-white text-primary rounded-full font-medium hover:scale-105 transition shadow-lg" data-title="项目介绍" data-content="本网站为移动应用开发课程期末大作业，采用响应式布局，所有按钮、弹窗、表单、标签均可点击交互，使用Tailwind CSS实现现代化玻璃拟态高级视觉效果，支持明暗主题切换，适配移动端屏幕规范，可部署至Github Pages生成独立在线访问网址。">查看项目详情</button>
+          </div>
+        </div>
+        <div class="carousel-item absolute inset-0 flex items-center justify-center text-center text-white px-6 opacity-0 transition-opacity duration-700">
+          <div>
+            <h1 class="text-[clamp(1.8rem,5vw,3.5rem)] font-bold text-shadow mb-4">全功能可交互页面</h1>
+            <p class="text-[clamp(1rem,2vw,1.2rem)] max-w-2xl mx-auto opacity-90">登录注册、弹窗、留言、标签切换、轮播全部可操作</p>
+            <button class="detailOpen mt-6 px-6 py-3 bg-white text-primary rounded-full font-medium hover:scale-105 transition shadow-lg" data-title="交互功能说明" data-content="1.导航栏跳转对应板块；2.登录/注册弹窗；3.6大产品卡片内置多款生活服务；4.服务标签切换；5.新闻弹窗；6.留言表单提交；7.明暗模式切换；8.移动端侧边菜单；9.回到顶部悬浮按钮；10.轮播左右切换。">查看交互列表</button>
+          </div>
+        </div>
+        <div class="carousel-item absolute inset-0 flex items-center justify-center text-center text-white px-6 opacity-0 transition-opacity duration-700">
+          <div>
+            <h1 class="text-[clamp(1.8rem,5vw,3.5rem)] font-bold text-shadow mb-4">Github一键部署上线</h1>
+            <p class="text-[clamp(1rem,2vw,1.2rem)] max-w-2xl mx-auto opacity-90">静态页面直接上传仓库，开启Pages获取公开访问网址</p>
+            <button class="detailOpen mt-6 px-6 py-3 bg-white text-primary rounded-full font-medium hover:scale-105 transition shadow-lg" data-title="Github部署教程" data-content="1.VSCode创建项目文件夹，放入index.html与README.md；2.初始化git仓库，提交推送至Github远程仓库；3.仓库设置中找到Pages，选择main分支根目录；4.保存后等待1-2分钟生成https在线网址，复制网址提交作业。">查看部署步骤</button>
+          </div>
+        </div>
+      </div>
+      <button id="prevSlide" class="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/30 text-white hover:bg-white/50 transition"><i class="fa-solid fa-chevron-left"></i></button>
+      <button id="nextSlide" class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/30 text-white hover:bg-white/50 transition"><i class="fa-solid fa-chevron-right"></i></button>
+      <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+        <span class="dot w-3 h-3 rounded-full bg-white/50 cursor-pointer active"></span>
+        <span class="dot w-3 h-3 rounded-full bg-white/50 cursor-pointer"></span>
+        <span class="dot w-3 h-3 rounded-full bg-white/50 cursor-pointer"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 产品中心（原版6卡片蓝白布局完全不变） -->
+  <section id="product" class="py-20 container mx-auto px-4">
+    <div class="text-center mb-14">
+      <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800 dark:text-white mb-3">产品中心</h2>
+      <p class="text-gray-500 dark:text-slate-400 max-w-xl mx-auto">点击任意产品卡片查看完整功能介绍，登录后可使用细分生活服务</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition hover:-translate-y-2 cursor-pointer detailOpen animate-float" 
+      data-title="移动端商城系统" 
+      data-content="适配安卓、iOS移动端的在线购物系统，覆盖生鲜、外卖、充值、二手闲置全日常消费场景，包含购物车、优惠券、订单管理、支付模拟、售后退款功能，弹性布局完美适配手机屏幕。"
+      data-services='[
+        {"name":"生鲜买菜下单","desc":"选购蔬菜水果肉蛋，填写收货地址配送上门","placeholder":"输入收货小区地址"},
+        {"name":"周边外卖点餐","desc":"预约餐饮、奶茶定时配送","placeholder":"输入想要点的餐品"},
+        {"name":"手机话费充值","desc":"手机号话费、流量快速充值","placeholder":"输入充值手机号码"},
+        {"name":"二手闲置发布","desc":"发布个人闲置物品转让信息","placeholder":"输入闲置物品名称"}
+      ]'>
+        <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-2xl mb-4">
+          <i class="fa-solid fa-cart-shopping"></i>
+        </div>
+        <h3 class="text-lg font-semibold dark:text-white mb-2">移动端商城系统</h3>
+        <p class="text-gray-500 dark:text-slate-400 text-sm">全终端适配电商解决方案</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition hover:-translate-y-2 cursor-pointer detailOpen animate-float" 
+      data-title="校园服务APP平台" 
+      data-content="面向高校学生的综合服务平台，集成课表查询、成绩查看、校园通知、失物招领、校园跑腿、图书馆预约等功能，移动端优先设计，操作简洁轻量化。"
+      data-services='[
+        {"name":"食堂预约点餐","desc":"提前预定三餐，到店免排队取餐","placeholder":"选择就餐食堂名称"},
+        {"name":"图书馆座位预约","desc":"自习室座位线上预约锁定","placeholder":"输入预约自习日期"},
+        {"name":"失物招领发布","desc":"发布丢失/捡到校园物品信息","placeholder":"描述丢失物品特征"},
+        {"name":"校园跑腿下单","desc":"代取快递、代买零食跑腿服务","placeholder":"填写收件宿舍楼栋"}
+      ]'>
+        <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-2xl mb-4">
+          <i class="fa-solid fa-graduation-cap"></i>
+        </div>
+        <h3 class="text-lg font-semibold dark:text-white mb-2">校园服务APP平台</h3>
+        <p class="text-gray-500 dark:text-slate-400 text-sm">一站式校园移动服务</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition hover:-translate-y-2 cursor-pointer detailOpen animate-float" 
+      data-title="数据可视化后台" 
+      data-content="移动端数据看板，图表自适应缩放，支持折线图、饼图、柱状图实时展示收支、作息、运动数据，管理员可在线筛选、导出报表，深色模式保护夜间浏览。"
+      data-services='[
+        {"name":"日常收支记账","desc":"记录餐饮、房租、购物消费","placeholder":"输入本次消费金额"},
+        {"name":"睡眠作息记录","desc":"录入入睡起床时间统计睡眠时长","placeholder":"填写昨晚入睡时间"},
+        {"name":"每日运动打卡","desc":"记录步行、跑步运动步数","placeholder":"输入今日运动步数"},
+        {"name":"月度生活报表导出","desc":"生成当月消费作息总结报表","placeholder":"选择导出月份"}
+      ]'>
+        <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-2xl mb-4">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <h3 class="text-lg font-semibold dark:text-white mb-2">数据可视化后台</h3>
+        <p class="text-gray-500 dark:text-slate-400 text-sm">多端自适应数据看板</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition hover:-translate-y-2 cursor-pointer detailOpen animate-float" 
+      data-title="即时通讯移动端" 
+      data-content="仿微信聊天界面，支持文字、图片消息发送，好友列表、聊天会话分组，本地存储聊天记录，响应式布局完美适配各类手机尺寸，适合家庭、小区合租沟通。"
+      data-services='[
+        {"name":"创建聊天群组","desc":"新建家庭、小区、合租聊天群","placeholder":"输入群组名称"},
+        {"name":"邻里闲置交换发帖","desc":"发布闲置物品交换信息","placeholder":"描述想要交换的物品"},
+        {"name":"线下活动邀约","desc":"发起聚餐、运动线下活动","placeholder":"填写活动主题名称"},
+        {"name":"合租账单共享","desc":"上传房租水电账单分摊对账","placeholder":"输入账单总金额"}
+      ]'>
+        <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-2xl mb-4">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+        <h3 class="text-lg font-semibold dark:text-white mb-2">即时通讯移动端</h3>
+        <p class="text-gray-500 dark:text-slate-400 text-sm">轻量化聊天交互系统</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition hover:-translate-y-2 cursor-pointer detailOpen animate-float" 
+      data-title="出行导航小程序" 
+      data-content="地图定位、路线规划、周边商家查询、收藏地点，手势缩放地图，移动端触控优化，覆盖通勤、买菜、短途旅游、就医全出行场景。"
+      data-services='[
+        {"name":"通勤路线规划","desc":"自动生成地铁/公交/骑行最优路线","placeholder":"输入上下班目的地"},
+        {"name":"网约车一键呼叫","desc":"预估车费呼叫附近车辆","placeholder":"输入出发地址"},
+        {"name":"周边生活点查询","desc":"查找药店、菜市场、停车场","placeholder":"搜索周边场所名称"},
+        {"name":"亲友位置共享","desc":"开启实时位置分享给家人","placeholder":"输入共享对象姓名"}
+      ]'>
+        <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-2xl mb-4">
+          <i class="fa-solid fa-location-dot"></i>
+        </div>
+        <h3 class="text-lg font-semibold dark:text-white mb-2">出行导航小程序</h3>
+        <p class="text-gray-500 dark:text-slate-400 text-sm">定位与路线规划工具</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition hover:-translate-y-2 cursor-pointer detailOpen animate-float" 
+      data-title="健康管理移动端" 
+      data-content="运动步数记录、睡眠监测、饮食打卡、健康报表生成，日历记录每日数据，轻量化无复杂加载，适合老年群体简易操作，配套社区挂号、服药提醒功能。"
+      data-services='[
+        {"name":"三餐饮食打卡","desc":"记录每日三餐热量摄入","placeholder":"输入今日主食名称"},
+        {"name":"慢病服药提醒设置","desc":"定时闹钟提醒服用药物","placeholder":"填写药品名称"},
+        {"name":"社区医院线上挂号","desc":"附近诊所预约问诊","placeholder":"选择就诊科室"},
+        {"name":"体检档案录入","desc":"保存历年体检指标报告","placeholder":"录入体检年份"}
+      ]'>
+        <div class="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-2xl mb-4">
+          <i class="fa-solid fa-heart-pulse"></i>
+        </div>
+        <h3 class="text-lg font-semibold dark:text-white mb-2">健康管理移动端</h3>
+        <p class="text-gray-500 dark:text-slate-400 text-sm">个人健康数据记录工具</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="service" class="py-20 bg-gray-100 dark:bg-slate-900">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-14">
+        <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800 dark:text-white mb-3">全套开发服务</h2>
+        <p class="text-gray-500 dark:text-slate-400">点击下方标签切换查看不同服务内容</p>
+      </div>
+      <div class="flex flex-wrap justify-center gap-3 mb-8">
+        <button class="serviceTab px-5 py-2 rounded-full bg-primary text-white tabActive" data-tab="tab1">移动端UI设计</button>
+        <button class="serviceTab px-5 py-2 rounded-full bg-white dark:bg-slate-800 dark:text-slate-300" data-tab="tab2">前端页面开发</button>
+        <button class="serviceTab px-5 py-2 rounded-full bg-white dark:bg-slate-800 dark:text-slate-300" data-tab="tab3">交互功能实现</button>
+        <button class="serviceTab px-5 py-2 rounded-full bg-white dark:bg-slate-800 dark:text-slate-300" data-tab="tab4">Github部署上线</button>
+      </div>
+      <div class="tabContent bg-white dark:bg-slate-800 rounded-xl p-8 shadow-md" id="tab1">
+        <h3 class="text-xl font-semibold dark:text-white mb-4">移动端UI设计规范</h3>
+        <p class="text-gray-600 dark:text-slate-300 leading-relaxed">遵循安卓Material Design与iOS设计规范，玻璃拟态、渐变、圆角高级视觉风格，多尺寸屏幕适配，明暗双主题配色，统一图标组件，提升应用质感与用户体验。</p>
+      </div>
+      <div class="tabContent bg-white dark:bg-slate-800 rounded-xl p-8 shadow-md hidden" id="tab2">
+        <h3 class="text-xl font-semibold dark:text-white mb-4">响应式前端页面开发</h3>
+        <p class="text-gray-600 dark:text-slate-300 leading-relaxed">使用HTML5+Tailwind CSS完成弹性布局，媒体查询适配手机/平板/电脑，禁止固定像素宽度，保证移动端无横向滚动，兼容主流浏览器。</p>
+      </div>
+      <div class="tabContent bg-white dark:bg-slate-800 rounded-xl p-8 shadow-md hidden" id="tab3">
+        <h3 class="text-xl font-semibold dark:text-white mb-4">JavaScript交互功能开发</h3>
+        <p class="text-gray-600 dark:text-slate-300 leading-relaxed">弹窗、轮播、表单提交、标签切换、菜单展开、滚动监听、主题切换全部原生JS实现，无第三方复杂框架，代码简洁便于课程作业讲解。</p>
+      </div>
+      <div class="tabContent bg-white dark:bg-slate-800 rounded-xl p-8 shadow-md hidden" id="tab4">
+        <h3 class="text-xl font-semibold dark:text-white mb-4">Github Pages免费部署</h3>
+        <p class="text-gray-600 dark:text-slate-300 leading-relaxed">静态网页无需服务器，上传至Github仓库，开启Pages功能自动生成HTTPS在线网址，可直接复制链接提交期末作业，永久可访问。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="news" class="py-20 container mx-auto px-4">
+    <div class="text-center mb-14">
+      <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800 dark:text-white mb-3">行业资讯动态</h2>
+      <p class="text-gray-500 dark:text-slate-400">点击新闻标题弹窗查看完整详情</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="border dark:border-slate-700 rounded-xl p-5 hover:shadow-lg transition cursor-pointer newsOpen" data-title="2026移动端前端开发趋势" data-content="2026年响应式网页、混合APP、轻量化H5小程序成为主流，玻璃拟态UI、暗色模式、手势交互为必备设计点，Github静态部署成为学生作业标准提交方式。">
+        <span class="text-xs text-primary">2026-06-11</span>
+        <h4 class="text-lg font-medium dark:text-white mt-2 mb-2">2026移动端前端开发趋势</h4>
+        <p class="text-sm text-gray-500 dark:text-slate-400 line-clamp-2">H5网页跨端开发成本持续降低，学生课程作业普遍采用纯静态页面+Github Pages交付...</p>
+      </div>
+      <div class="border dark:border-slate-700 rounded-xl p-5 hover:shadow-lg transition cursor-pointer newsOpen" data-title="移动应用开发课程作业规范" data-content="课程要求页面必须全交互、响应式适配移动端、可部署在线网址，禁止无交互静态页面，评分重点考察JS交互逻辑与多终端适配效果。">
+        <span class="text-xs text-primary">2026-06-10</span>
+        <h4 class="text-lg font-medium dark:text-white mt-2 mb-2">移动应用开发课程作业规范</h4>
+        <p class="text-sm text-gray-500 dark:text-slate-400 line-clamp-2">期末大作业评分标准：页面丰富度、交互完整性、移动端适配、Github在线部署四项核心指标...</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="message" class="py-20 bg-gray-100 dark:bg-slate-900">
+    <div class="container mx-auto px-4 max-w-3xl">
+      <div class="text-center mb-10">
+        <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800 dark:text-white mb-3">在线留言反馈</h2>
+        <p class="text-gray-500 dark:text-slate-400">填写信息后点击提交，弹窗反馈提交结果</p>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-md">
+        <input id="msgName" type="text" placeholder="您的姓名" class="w-full border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-4 py-3 mb-4 outline-primary">
+        <input id="msgPhone" type="text" placeholder="联系电话" class="w-full border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-4 py-3 mb-4 outline-primary">
+        <textarea id="msgContent" rows="4" placeholder="请输入留言内容..." class="w-full border dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg px-4 py-3 mb-6 outline-primary resize-none"></textarea>
+        <div class="flex gap-4">
+          <button id="submitMsg" class="flex-1 bg-primary text-white py-3 rounded-lg hover:opacity-90 transition">提交留言</button>
+          <button id="clearMsg" class="flex-1 border border-gray-300 dark:border-slate-600 dark:text-slate-300 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 transition">清空内容</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="py-20 container mx-auto px-4">
+    <div class="text-center mb-14">
+      <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold text-gray-800 dark:text-white mb-3">项目说明｜关于本网站</h2>
+    </div>
+    <div class="grid md:grid-cols-2 gap-10 items-center">
+      <div>
+        <h3 class="text-xl font-semibold dark:text-white mb-4">移动应用开发期末作业项目</h3>
+        <p class="text-gray-600 dark:text-slate-300 leading-relaxed mb-4">本网站为完整可交互响应式网页，专为移动应用开发课程期末大作业制作，UI采用高级蓝白玻璃拟态主题，全部业务功能必须登录解锁。</p>
+        <p class="text-gray-600 dark:text-slate-300 leading-relaxed">6款产品各带4套可操作生活服务，登录后点击卡片打开服务列表，填写表单模拟业务提交，完美适配手机、电脑多端。</p>
+      </div>
+      <div class="bg-gradient-to-br from-primary/20 to-blue-200 dark:from-primary/30 dark:to-slate-700 rounded-xl h-60 flex items-center justify-center">
+        <i class="fa-solid fa-code text-6xl text-primary animate-float"></i>
+      </div>
+    </div>
+  </section>
+
+  <footer class="bg-darkBg text-slate-400 py-10">
+    <div class="container mx-auto px-4 text-center">
+      <p>移动应用开发期末大作业 © 2026 智慧移动平台 | Github Pages部署静态网站</p>
+      <p class="mt-2 text-sm">全部业务服务需登录后使用，响应式适配移动端设备</p>
+    </div>
+  </footer>
+
+  <script>
+    let isLogin = false;
+    // 内置测试账号，无需注册直接登录
+    let userAccountList = [
+      {username:"test123",password:"123456"}
+    ];
+    let currentOperateService = null;
+
+    const html = document.documentElement;
+    const themeSwitch = document.getElementById('themeSwitch');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuBtn = document.getElementById('menuBtn');
+    const closeMenu = document.querySelector('.closeMenu');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginModal = document.getElementById('loginModal');
+    const regModal = document.getElementById('regModal');
+    const switchReg = document.querySelector('.switchReg');
+    const switchLogin = document.querySelector('.switchLogin');
+    const closeModals = document.querySelectorAll('.closeModal');
+    const detailModal = document.getElementById('detailModal');
+    const detailTitle = document.getElementById('detailTitle');
+    const detailContent = document.getElementById('detailContent');
+    const detailOpens = document.querySelectorAll('.detailOpen');
+    const newsOpens = document.querySelectorAll('.newsOpen');
+    const backTop = document.getElementById('backTop');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const serviceTabs = document.querySelectorAll('.serviceTab');
+    const tabContents = document.querySelectorAll('.tabContent');
+    const submitMsg = document.getElementById('submitMsg');
+    const clearMsg = document.getElementById('clearMsg');
+    const msgName = document.getElementById('msgName');
+    const msgPhone = document.getElementById('msgPhone');
+    const msgContent = document.getElementById('msgContent');
+    const loginUser = document.getElementById('loginUser');
+    const loginPwd = document.getElementById('loginPwd');
+    const loginSubmit = document.getElementById('loginSubmit');
+    const regUser = document.getElementById('regUser');
+    const regPwd = document.getElementById('regPwd');
+    const regPwd2 = document.getElementById('regPwd2');
+    const regSubmit = document.getElementById('regSubmit');
+    const serviceBtnBox = document.getElementById('serviceBtnBox');
+    const operateModal = document.getElementById('operateModal');
+    const closeOperate = document.querySelector('.closeOperate');
+    const operateTitle = document.getElementById('operateTitle');
+    const operateDesc = document.getElementById('operateDesc');
+    const operateInput = document.getElementById('operateInput');
+    const operateConfirm = document.getElementById('operateConfirm');
+
+    themeSwitch.addEventListener('click', ()=> html.classList.toggle('dark'));
+    menuBtn.addEventListener('click', ()=> mobileMenu.classList.remove('-translate-x-full'));
+    closeMenu.addEventListener('click', ()=> mobileMenu.classList.add('-translate-x-full'));
+    navLinks.forEach(link=> link.addEventListener('click', ()=> mobileMenu.classList.add('-translate-x-full')));
+    loginBtn.addEventListener('click', ()=> loginModal.classList.remove('hidden'));
+    switchReg.addEventListener('click', ()=>{ loginModal.classList.add('hidden'); regModal.classList.remove('hidden'); });
+    switchLogin.addEventListener('click', ()=>{ regModal.classList.add('hidden'); loginModal.classList.remove('hidden'); });
+    closeModals.forEach(btn=> btn.addEventListener('click', ()=>{ loginModal.classList.add('hidden'); regModal.classList.add('hidden'); detailModal.classList.add('hidden'); }));
+    closeOperate.addEventListener('click', ()=> operateModal.classList.add('hidden'));
+
+    // 注册逻辑
+    regSubmit.addEventListener('click',()=>{
+      const u = regUser.value.trim();
+      const p1 = regPwd.value.trim();
+      const p2 = regPwd2.value.trim();
+      if(!u||!p1||!p2) return alert("用户名和密码不能为空");
+      if(p1!==p2) return alert("两次密码不一致");
+      if(userAccountList.find(x=>x.username===u)) return alert("账号已存在，请登录");
+      userAccountList.push({username:u,password:p1});
+      alert("注册成功，请登录");
+      regModal.classList.add('hidden'); loginModal.classList.remove('hidden');
+      regUser.value=regPwd.value=regPwd2.value="";
+    })
+
+    // 登录校验（内置test123/123456直接通过）
+    loginSubmit.addEventListener('click',()=>{
+      const u = loginUser.value.trim();
+      const p = loginPwd.value.trim();
+      const user = userAccountList.find(x=>x.username===u&&x.password===p);
+      if(!user) return alert("账号密码错误");
+      isLogin = true;
+      loginModal.classList.add('hidden');
+      loginBtn.innerText = `欢迎 ${u}`;
+      loginBtn.style.border = "none";
+      loginBtn.style.color = "#165DFF";
+      alert("登录成功，全部产品服务已解锁！");
+      loginUser.value=loginPwd.value="";
+    })
+
+    // 产品卡片拦截+渲染服务按钮
+    detailOpens.forEach(item=>{
+      item.addEventListener('click', ()=>{
+        if(!isLogin){
+          alert("请先登录账号才能使用产品功能！");
+          loginModal.classList.remove('hidden');
+          return;
+        }
+        detailTitle.innerText = item.dataset.title;
+        detailContent.innerText = item.dataset.content;
+        serviceBtnBox.innerHTML = "";
+        const funcs = JSON.parse(item.dataset.services);
+        funcs.forEach(f=>{
+          const btn = document.createElement('button');
+          btn.className = "px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition";
+          btn.innerText = f.name;
+          btn.onclick = ()=>{
+            currentOperateService = f;
+            operateTitle.innerText = f.name;
+            operateDesc.innerText = f.desc;
+            operateInput.placeholder = f.placeholder;
+            operateInput.value = "";
+            operateModal.classList.remove('hidden');
+          }
+          serviceBtnBox.appendChild(btn);
+        })
+        detailModal.classList.remove('hidden');
+      })
+    })
+
+    // 服务提交
+    operateConfirm.addEventListener('click',()=>{
+      const val = operateInput.value.trim();
+      if(!val) return alert("请填写信息");
+      alert(`【${currentOperateService.name}】提交成功，内容：${val}`);
+      operateModal.classList.add('hidden');
+    })
+
+    // 资讯拦截
+    newsOpens.forEach(item=>{
+      item.addEventListener('click',()=>{
+        if(!isLogin){ alert("请登录后查看资讯"); loginModal.classList.remove('hidden'); return; }
+        detailTitle.innerText = item.dataset.title;
+        detailContent.innerText = item.dataset.content;
+        serviceBtnBox.innerHTML = "";
+        detailModal.classList.remove('hidden');
+      })
+    })
+
+    // 标签拦截
+    serviceTabs.forEach(tab=>{
+      tab.addEventListener('click',()=>{
+        if(!isLogin){ alert("请登录后查看开发服务"); loginModal.classList.remove('hidden'); return; }
+        serviceTabs.forEach(t=>{
+          t.classList.remove('bg-primary','text-white','tabActive');
+          t.classList.add('bg-white','dark:bg-slate-800','dark:text-slate-300');
+        })
+        tab.classList.add('bg-primary','text-white','tabActive');
+        tab.classList.remove('bg-white','dark:bg-slate-800','dark:text-slate-300');
+        tabContents.forEach(c=> c.classList.add('hidden'));
+        document.getElementById(tab.dataset.tab).classList.remove('hidden');
+      })
+    })
+
+    // 留言拦截
+    submitMsg.addEventListener('click',()=>{
+      if(!isLogin){ alert("请登录后提交留言"); loginModal.classList.remove('hidden'); return; }
+      if(msgName.value&&msgPhone.value&&msgContent.value){
+        alert('留言提交成功！');
+        msgName.value=msgPhone.value=msgContent.value="";
+      }else alert("请填全信息");
+    })
+    clearMsg.addEventListener('click',()=>{
+      msgName.value=msgPhone.value=msgContent.value="";
+    })
+
+    // 回到顶部
+    window.addEventListener('scroll', ()=>{
+      if(window.scrollY>400) backTop.classList.remove('hidden');
+      else backTop.classList.add('hidden');
+    })
+    backTop.addEventListener('click', ()=> window.scrollTo({top:0,behavior:'smooth'}));
+
+    // 轮播
+    const slides = document.querySelectorAll('.carousel-item');
+    const dots = document.querySelectorAll('.dot');
+    const prevSlide = document.getElementById('prevSlide');
+    const nextSlide = document.getElementById('nextSlide');
+    let currentIndex = 0;
+    function renderSlide(){
+      slides.forEach((s,i)=> s.style.opacity = i===currentIndex ? "1":"0");
+      dots.forEach((d,i)=> d.classList.toggle('active', i===currentIndex));
+    }
+    function next(){ currentIndex=(currentIndex+1)%slides.length; renderSlide(); }
+    function prev(){ currentIndex=(currentIndex-1+slides.length)%slides.length; renderSlide(); }
+    nextSlide.addEventListener('click', next);
+    prevSlide.addEventListener('click', prev);
+    dots.forEach((dot,i)=> dot.addEventListener('click',()=>{ currentIndex=i; renderSlide(); }));
+    setInterval(next,5000);
+    renderSlide();
+
+    // 平滑滚动
+    document.querySelectorAll('a[href^="#"]').forEach(anchor=>{
+      anchor.addEventListener('click', function(e){
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if(target) target.scrollIntoView({behavior:'smooth'});
+      })
+    })
+  </script>
+</body>
+</html>
